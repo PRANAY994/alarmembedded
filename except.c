@@ -26,15 +26,15 @@ void toggleLED(void);
 int main(void) {
     // Initialize system (e.g., configure clocks, peripherals)
     initializeSystem();
-    configureMPU(); // Configure MPU for Memory Management Faults
+    // configureMPU(); // Configure MPU for Memory Management Faults
 
     // Infinite loop
     while (1) {
         // Uncomment one of the following lines to test specific faults
-        // triggerHardFault();
-        // triggerMemManageFault();
+//        triggerHardFault();
         // triggerBusFault();
-        // triggerUsageFault();
+        // triggerMemManageFault();
+         triggerUsageFault();
         // triggerSVCall();
         // triggerPendSV();
     }
@@ -59,11 +59,11 @@ void configureMPU(void) {
     SCB->SHCSR |= SCB_SHCSR_MEMFAULTENA_Msk;
 }
 
-// Function to trigger a Hard Fault
+// Function to trigger a Hard Fault by division by zero
 void triggerHardFault(void) {
-    // Access an invalid address to trigger Hard Fault
-    volatile int *pInvalidAddress = (int *)0xFFFFFFFF; // Invalid address
-    *pInvalidAddress = 0; // Write to invalid address
+    volatile int divisor = 0;
+    volatile int result = 10 / divisor; // Division by zero to trigger Hard Fault
+	  (void)result;
 }
 
 // Function to trigger a Memory Management Fault
@@ -85,10 +85,16 @@ void triggerBusFault(void) {
 
 // Function to trigger a Usage Fault
 void triggerUsageFault(void) {
-    // Enable Usage Fault
-    SCB->SHCSR |= SCB_SHCSR_USGFAULTENA_Msk;
-    // Trigger an undefined instruction to cause Usage Fault
-    __asm("UDF #0"); // Undefined instruction
+    // Enable Usage Fault and Divide-by-Zero trap
+    SCB->CCR |= SCB_CCR_DIV_0_TRP_Msk; // Set the DIV_0_TRP bit to trap divide-by-zero errors
+    //SCB->SHCSR |= SCB_SHCSR_USGFAULTENA_Msk; // Enable Usage Fault
+    
+    // Perform a divide-by-zero operation to trigger the Usage Fault
+    volatile int numerator = 10;
+    volatile int divisor = 0;
+    volatile int result = numerator / divisor; // This will now trigger a Usage Fault
+
+    (void)result; // Prevent unused variable warning
 }
 
 // Function to trigger an SVC (Supervisor Call) Fault
@@ -162,6 +168,8 @@ void initializeSystem(void) {
 
     // Configure PC13 as output (LED)
     GPIOC->MODER |= (1 << (LED_PIN * 2)); // Set mode to output
+    
+    
 }
 
 // Function to toggle the LED
